@@ -460,9 +460,64 @@ button:focus-visible {
 }
 
 .region-panel {
+  padding: 22px;
+}
+
+.region-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.region-summary::-webkit-details-marker {
+  display: none;
+}
+
+.region-summary:focus-visible {
+  border-radius: 12px;
+  outline: 3px solid rgba(35, 91, 75, 0.13);
+}
+
+.region-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hide-label {
+  display: none;
+}
+
+.toggle-icon {
+  display: inline-block;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.region-panel[open] .show-label {
+  display: none;
+}
+
+.region-panel[open] .hide-label {
+  display: inline;
+}
+
+.region-panel[open] .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.region-content {
   display: grid;
   gap: 22px;
-  padding: 22px;
+  padding-top: 24px;
 }
 
 .summary-title {

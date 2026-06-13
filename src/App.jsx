@@ -633,74 +633,83 @@ function SituacaoPorRegiao({ resumoRegiao, filtrosAtivos }) {
     : 'Blumenau · Todos os bairros'
 
   return (
-    <section className="region-panel">
-      <div className="summary-title">
-        <h2>Situação por região</h2>
-        <span>{regiaoSelecionada}</span>
-      </div>
+    <details className="region-panel">
+      <summary className="region-summary">
+        <div className="summary-title">
+          <h2>Situação por região</h2>
+          <span>{regiaoSelecionada}</span>
+        </div>
+        <span className="region-toggle" aria-hidden="true">
+          <span className="show-label">Expandir</span>
+          <span className="hide-label">Recolher</span>
+          <span className="toggle-icon">⌄</span>
+        </span>
+      </summary>
 
-      <div className="risk-explanation">
-        <h3>Nível de risco</h3>
-        <p>Indica a criticidade da situação e o grau de atenção recomendado para a comunidade.</p>
-      </div>
+      <div className="region-content">
+        <div className="risk-explanation">
+          <h3>Nível de risco</h3>
+          <p>Indica a criticidade da situação e o grau de atenção recomendado para a comunidade.</p>
+        </div>
 
-      <div className="metrics-grid region-metrics">
-        <article className="metric-card total region-total">
-          <span>Total</span>
-          <strong>{resumoRegiao.totalAlertas ?? 0}</strong>
-        </article>
-
-        {[...niveis].reverse().map((nivel) => (
-          <article className={`metric-card attention-${nivelClass(nivel.value).replace('level-', '')}`} key={nivel.value}>
-            <span>Risco {nivel.label.toLowerCase()}</span>
-            <strong>{resumoRegiao.totalPorNivelAtencao?.[nivel.value] ?? 0}</strong>
+        <div className="metrics-grid region-metrics">
+          <article className="metric-card total region-total">
+            <span>Total</span>
+            <strong>{resumoRegiao.totalAlertas ?? 0}</strong>
           </article>
-        ))}
-      </div>
 
-      <div className="region-breakdown">
-        <div className="breakdown-list">
-          <h3>Por categoria</h3>
-          {categorias.map((categoria) => (
-            <div key={categoria.value}>
-              <span>{categoria.label}</span>
-              <strong>{resumoRegiao.totalPorCategoria?.[categoria.value] ?? 0}</strong>
-            </div>
-          ))}
-        </div>
-
-        <div className="breakdown-list">
-          <h3>Por confiança da informação</h3>
-          <p className="breakdown-help">Indica se existem outros relatos parecidos na mesma região.</p>
-          {['Baixa', 'Média', 'Alta'].map((confianca) => (
-            <div className={getConfiancaSituacaoClass(confianca)} key={confianca}>
-              <span>Confiança da informação: {confianca.toLowerCase()}</span>
-              <strong>{resumoRegiao.totalPorConfiancaSituacao?.[confianca] ?? 0}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="recent-list">
-        <h3>Ultimos alertas da regiao</h3>
-        {resumoRegiao.ultimosAlertas?.length ? (
-          resumoRegiao.ultimosAlertas.map((alerta) => (
-            <article key={alerta.id}>
-              <strong>{localizacaoTitulo(alerta)}</strong>
-              <span>
-                {estaProcessando(alerta)
-                  ? 'IA analisando...'
-                  : alerta.statusProcessamento === 'Erro'
-                    ? 'Revisão recomendada'
-                    : `${categoriaLabel(alerta.categoria)} · Nível de risco: ${niveisAtencao[alerta.nivelAtencao]}`}
-              </span>
+          {[...niveis].reverse().map((nivel) => (
+            <article className={`metric-card attention-${nivelClass(nivel.value).replace('level-', '')}`} key={nivel.value}>
+              <span>Risco {nivel.label.toLowerCase()}</span>
+              <strong>{resumoRegiao.totalPorNivelAtencao?.[nivel.value] ?? 0}</strong>
             </article>
-          ))
-        ) : (
-          <p>Nenhum alerta encontrado para esta regiao.</p>
-        )}
+          ))}
+        </div>
+
+        <div className="region-breakdown">
+          <div className="breakdown-list">
+            <h3>Por categoria</h3>
+            {categorias.map((categoria) => (
+              <div key={categoria.value}>
+                <span>{categoria.label}</span>
+                <strong>{resumoRegiao.totalPorCategoria?.[categoria.value] ?? 0}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div className="breakdown-list">
+            <h3>Por confiança da informação</h3>
+            <p className="breakdown-help">Indica se existem outros relatos parecidos na mesma região.</p>
+            {['Baixa', 'Média', 'Alta'].map((confianca) => (
+              <div className={getConfiancaSituacaoClass(confianca)} key={confianca}>
+                <span>Confiança da informação: {confianca.toLowerCase()}</span>
+                <strong>{resumoRegiao.totalPorConfiancaSituacao?.[confianca] ?? 0}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="recent-list">
+          <h3>Últimos alertas da região</h3>
+          {resumoRegiao.ultimosAlertas?.length ? (
+            resumoRegiao.ultimosAlertas.map((alerta) => (
+              <article key={alerta.id}>
+                <strong>{localizacaoTitulo(alerta)}</strong>
+                <span>
+                  {estaProcessando(alerta)
+                    ? 'IA analisando...'
+                    : alerta.statusProcessamento === 'Erro'
+                      ? 'Revisão recomendada'
+                      : `${categoriaLabel(alerta.categoria)} · Nível de risco: ${niveisAtencao[alerta.nivelAtencao]}`}
+                </span>
+              </article>
+            ))
+          ) : (
+            <p>Nenhum alerta encontrado para esta região.</p>
+          )}
+        </div>
       </div>
-    </section>
+    </details>
   )
 }
 
