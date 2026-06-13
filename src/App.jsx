@@ -81,6 +81,24 @@ function analiseConcluida(alerta) {
   return alerta.statusProcessamento === 'Concluido'
 }
 
+function mensagemConfiancaInformacao(alerta) {
+  const quantidade = alerta.quantidadeRelatosSemelhantes ?? 0
+
+  if (quantidade === 0) return 'Ainda não há outros relatos semelhantes nesta região.'
+  if (quantidade === 1) return 'Existe outro relato semelhante nesta região.'
+  return `Existem ${quantidade} outros relatos semelhantes nesta região.`
+}
+
+function conteudoTratadoAlerta(alerta) {
+  return (
+    alerta.mensagemTratada ||
+    alerta.resumo ||
+    alerta.orientacaoPreventiva ||
+    alerta.textoCorrigido ||
+    'Informação tratada pela IA indisponível.'
+  )
+}
+
 function criarQueryString(valores) {
   const params = new URLSearchParams()
 
@@ -233,51 +251,62 @@ function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <div>
-          <h1>Rede de Vizinhos</h1>
+        <div className="brand">
+          <span className="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11.5 12 4l9 7.5" />
+              <path d="M5.5 10.5V20h13v-9.5" />
+            </svg>
+          </span>
+          <div>
+            <h1>Rede de Vizinhos</h1>
+            <span>Blumenau/SC</span>
+          </div>
         </div>
+
+        <nav className="tab-nav" aria-label="Navegação principal">
+          <button className={telaAtual === 'home' ? 'active' : ''} onClick={() => setTelaAtual('home')}>
+            Home
+          </button>
+          <button className={telaAtual === 'novo' ? 'active' : ''} onClick={() => setTelaAtual('novo')}>
+            Novo alerta
+          </button>
+          <button className={telaAtual === 'alertas' ? 'active' : ''} onClick={() => setTelaAtual('alertas')}>
+            Alertas
+          </button>
+        </nav>
       </header>
 
-      <nav className="tab-nav" aria-label="Navegacao principal">
-        <button className={telaAtual === 'home' ? 'active' : ''} onClick={() => setTelaAtual('home')}>
-          Home
-        </button>
-        <button className={telaAtual === 'novo' ? 'active' : ''} onClick={() => setTelaAtual('novo')}>
-          Novo alerta
-        </button>
-        <button className={telaAtual === 'alertas' ? 'active' : ''} onClick={() => setTelaAtual('alertas')}>
-          Alertas
-        </button>
-      </nav>
+      <div className="app-content">
+        {mensagemStatus && <p className="status-message">{mensagemStatus}</p>}
 
-      {mensagemStatus && <p className="status-message">{mensagemStatus}</p>}
+        {telaAtual === 'home' && (
+          <Home resumo={resumo} carregando={carregando} irParaNovo={() => setTelaAtual('novo')} />
+        )}
 
-      {telaAtual === 'home' && (
-        <Home resumo={resumo} carregando={carregando} irParaNovo={() => setTelaAtual('novo')} />
-      )}
+        {telaAtual === 'novo' && (
+          <NovoAlerta
+            formulario={formulario}
+            salvando={salvando}
+            alterarCampo={alterarCampo}
+            registrarAlerta={registrarAlerta}
+          />
+        )}
 
-      {telaAtual === 'novo' && (
-        <NovoAlerta
-          formulario={formulario}
-          salvando={salvando}
-          alterarCampo={alterarCampo}
-          registrarAlerta={registrarAlerta}
-        />
-      )}
-
-      {telaAtual === 'alertas' && (
-        <Alertas
-          alertas={alertas}
-          resumoRegiao={resumoRegiao}
-          filtros={filtros}
-          filtrosAtivos={filtrosAtivos}
-          alterarFiltro={alterarFiltro}
-          aplicarFiltros={aplicarFiltros}
-          limparFiltros={limparFiltros}
-          carregando={carregando}
-          recarregar={() => carregarDados(filtros)}
-        />
-      )}
+        {telaAtual === 'alertas' && (
+          <Alertas
+            alertas={alertas}
+            resumoRegiao={resumoRegiao}
+            filtros={filtros}
+            filtrosAtivos={filtrosAtivos}
+            alterarFiltro={alterarFiltro}
+            aplicarFiltros={aplicarFiltros}
+            limparFiltros={limparFiltros}
+            carregando={carregando}
+            recarregar={() => carregarDados(filtros)}
+          />
+        )}
+      </div>
     </main>
   )
 }
@@ -285,14 +314,14 @@ function App() {
 function Home({ resumo, carregando, irParaNovo }) {
   return (
     <section className="screen home-screen">
-      <div className="intro">
-        <h2>Comunicacao preventiva para a comunidade</h2>
-        <p>
-          Registre mensagens recebidas por moradores, organize alertas por categoria e acompanhe
-          o nivel de atencao indicado por regras simples no backend.
-        </p>
-        <button className="primary-button" type="button" onClick={irParaNovo}>
-          Registrar alerta
+      <div className="home-heading">
+        <div>
+          <span className="community-badge">● Comunidade ativa</span>
+          <h2>Olá, vizinho.</h2>
+          <p>Acompanhe e compartilhe situações que merecem atenção em Blumenau/SC.</p>
+        </div>
+        <button className="primary-button register-button" type="button" onClick={irParaNovo}>
+          + Registrar alerta
         </button>
       </div>
 
@@ -304,18 +333,42 @@ function Home({ resumo, carregando, irParaNovo }) {
 function PainelResumo({ resumo, carregando }) {
   return (
     <section className="summary-panel" aria-label="Painel de resumo">
-      <div className="summary-title">
-        <h2>Painel</h2>
-        <span>{carregando ? 'Atualizando...' : 'Dados atuais'}</span>
-      </div>
-
-      <div className="metrics-grid">
-        <article className="metric-card total">
+      <article className="summary-feature">
+        <span className="panel-badge">Painel da semana</span>
+        <h3>
+          Tecnologia para apoiar,
+          <br />
+          <em>vizinhos para cuidar.</em>
+        </h3>
+        <p>A IA ajuda a organizar e resumir os relatos para apoiar a comunicação e o cuidado entre a comunidade.</p>
+        <div className="feature-total">
           <span>Total de alertas</span>
           <strong>{resumo.totalAlertas ?? 0}</strong>
+        </div>
+      </article>
+
+      <div className="summary-overview">
+        <article className="status-card">
+          <div>
+            <span>Status</span>
+            <span className="live-status">● {carregando ? 'Atualizando' : 'Ao vivo'}</span>
+          </div>
+          <h3>{resumo.totalAlertas ? 'A comunidade está de olho.' : 'Tudo certo por aqui.'}</h3>
+          <p>Os relatos da comunidade aparecem aqui assim que são processados.</p>
         </article>
 
-        {categorias.map((categoria) => (
+        <div className="home-metrics">
+          {categorias.slice(0, 2).map((categoria) => (
+            <article className="metric-card" key={categoria.value}>
+              <span>{categoria.label}</span>
+              <strong>{resumo.totalPorCategoria?.[categoria.value] ?? 0}</strong>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="home-metrics home-metrics-secondary">
+        {categorias.slice(2).map((categoria) => (
           <article className="metric-card" key={categoria.value}>
             <span>{categoria.label}</span>
             <strong>{resumo.totalPorCategoria?.[categoria.value] ?? 0}</strong>
@@ -328,15 +381,18 @@ function PainelResumo({ resumo, carregando }) {
 
 function NovoAlerta({ formulario, salvando, alterarCampo, registrarAlerta }) {
   return (
-    <section className="screen">
-      <form className="form-panel" onSubmit={registrarAlerta}>
-        <div className="section-heading">
-          <h2>Novo alerta</h2>
-          <p>Informe a mensagem, cidade e bairro para agrupamento regional.</p>
-        </div>
+    <section className="screen form-screen">
+      <div className="section-heading">
+        <h2>Novo alerta</h2>
+        <p>Descreva a situação. A categoria e o nível de risco serão definidos pela análise da IA.</p>
+      </div>
 
-        <label>
-          Mensagem do alerta
+      <form className="form-panel" onSubmit={registrarAlerta}>
+        <label className="full-field">
+          <span className="field-heading">
+            <span>Mensagem do alerta *</span>
+            <span>{formulario.mensagem.length}/1000 (mínimo 5)</span>
+          </span>
           <textarea
             value={formulario.mensagem}
             onChange={(event) => alterarCampo('mensagem', event.target.value)}
@@ -344,14 +400,17 @@ function NovoAlerta({ formulario, salvando, alterarCampo, registrarAlerta }) {
             maxLength={1000}
             rows={7}
             required
-            placeholder="Ex.: Carro parado ha muito tempo observando as casas..."
+            placeholder="Carro parado há muito tempo observando as casas..."
           />
         </label>
 
-        <input type="hidden" value="Blumenau" readOnly />
+        <label>
+          Cidade
+          <input value="Blumenau" readOnly disabled />
+        </label>
 
         <label>
-          Bairro
+          Bairro *
           <select
             value={formulario.bairro}
             onChange={(event) => alterarCampo('bairro', event.target.value)}
@@ -366,20 +425,27 @@ function NovoAlerta({ formulario, salvando, alterarCampo, registrarAlerta }) {
           </select>
         </label>
 
-        <label>
-          Rua ou ponto de referência
+        <label className="full-field">
+          <span className="field-heading">
+            <span>Rua ou ponto de referência</span>
+            <span>{formulario.referenciaLocalOriginal.length}/240 · opcional</span>
+          </span>
           <input
             value={formulario.referenciaLocalOriginal}
             onChange={(event) => alterarCampo('referenciaLocalOriginal', event.target.value)}
             maxLength={240}
-            placeholder="Ex: próximo ao mercado, perto da escola, Rua 2 de Setembro..."
+            placeholder="Próximo ao mercado, perto da escola, Rua 2 de Setembro..."
           />
         </label>
 
-        <button className="primary-button" type="submit" disabled={salvando}>
-          {salvando ? 'Registrando...' : 'Salvar alerta'}
-        </button>
+        <div className="form-submit">
+          <button className="primary-button" type="submit" disabled={salvando}>
+            {salvando ? 'Registrando...' : 'Salvar alerta'}
+          </button>
+        </div>
       </form>
+
+      <p className="screen-footer">Blumenau/SC — Comunicação preventiva entre vizinhos</p>
     </section>
   )
 }
@@ -400,7 +466,6 @@ function Alertas({
       <div className="list-header">
         <div className="section-heading">
           <h2>Alertas cadastrados</h2>
-          <p>Consulte os registros e filtre por categoria.</p>
         </div>
         <button className="secondary-button" type="button" onClick={() => recarregar()} disabled={carregando}>
           Atualizar
@@ -424,7 +489,7 @@ function Alertas({
             value={filtros.bairro}
             onChange={(event) => alterarFiltro('bairro', event.target.value)}
           >
-            <option value="">Todos os bairros</option>
+            <option value="">Todos</option>
             {bairrosBlumenau.map((bairro) => (
               <option key={bairro} value={bairro}>
                 {bairro}
@@ -445,7 +510,7 @@ function Alertas({
         <label>
           Categoria
           <select value={filtros.categoria} onChange={(event) => alterarFiltro('categoria', event.target.value)}>
-            <option value="">Todas as categorias</option>
+            <option value="">Todas</option>
             {categorias.map((categoria) => (
               <option key={categoria.value} value={categoria.value}>
                 {categoria.label}
@@ -455,9 +520,9 @@ function Alertas({
         </label>
 
         <label>
-          Nivel de risco
+          Nível de risco
           <select value={filtros.nivelAtencao} onChange={(event) => alterarFiltro('nivelAtencao', event.target.value)}>
-            <option value="">Todos os niveis</option>
+            <option value="">Todos</option>
             {niveis.map((nivel) => (
               <option key={nivel.value} value={nivel.value}>
                 {nivel.label}
@@ -489,13 +554,13 @@ function Alertas({
           <article className="alert-card" key={alerta.id}>
             <div className="alert-meta">
               {estaProcessando(alerta) ? (
-                <span className="processing-badge">Analisando...</span>
+                <span className="processing-badge">IA analisando...</span>
               ) : alerta.statusProcessamento === 'Erro' ? (
-                <span className="processing-error-badge">Falha na analise</span>
+                <span className="processing-error-badge">Falha na análise</span>
               ) : (
                 <>
                   <span className={`level ${nivelClass(alerta.nivelAtencao)}`}>
-                    {niveisAtencao[alerta.nivelAtencao] ?? alerta.nivelAtencao}
+                    Nível de risco: {niveisAtencao[alerta.nivelAtencao] ?? alerta.nivelAtencao}
                   </span>
                   <span>{categoriaLabel(alerta.categoria)}</span>
                 </>
@@ -506,47 +571,49 @@ function Alertas({
             {estaProcessando(alerta) && alerta.referenciaLocalOriginal && (
               <div className="location-details">
                 <span>{alerta.referenciaLocalOriginal}</span>
-                <span>Referencia aguardando tratamento automatico</span>
+                <span>Referência aguardando ajuste da IA.</span>
               </div>
             )}
             {analiseConcluida(alerta) && alerta.referenciaLocalTratada && (
               <div className="location-details">
+                <strong>Referência ajustada</strong>
                 <span>{alerta.referenciaLocalTratada}</span>
-                {(alerta.referenciaLocalCorrigida || alerta.confiancaReferenciaLocal) && (
-                  <span>
-                    Referência {alerta.referenciaLocalCorrigida ? 'corrigida' : 'tratada'}
-                    {alerta.confiancaReferenciaLocal
-                      ? ` - confiança ${alerta.confiancaReferenciaLocal}`
-                      : ''}
-                  </span>
-                )}
               </div>
             )}
             {analiseConcluida(alerta) && (
               <div className={`confidence-box ${getConfiancaSituacaoClass(alerta.confiancaSituacao)}`}>
-                <strong>Confiança da situação: {alerta.confiancaSituacao || 'Baixa'}</strong>
-                {alerta.quantidadeRelatosSemelhantes > 0 && (
-                  <span>Há relatos semelhantes nesta região.</span>
-                )}
-                {alerta.mensagemConfiancaSituacao && (
-                  <span>{alerta.mensagemConfiancaSituacao}</span>
-                )}
+                <strong>Confiança da informação: {alerta.confiancaSituacao || 'Baixa'}</strong>
+                <span>Indica se existem outros relatos parecidos na mesma região.</span>
+                <span>{mensagemConfiancaInformacao(alerta)}</span>
               </div>
             )}
             {alerta.statusProcessamento === 'Erro' && (
               <p className="processing-error">
-                Não foi possível concluir a análise automática. Revisão recomendada.
+                Não foi possível concluir o tratamento automático. Revisão recomendada.
               </p>
             )}
             {(alerta.possuiDadosSensiveis || alerta.precisaRevisaoHumana) && (
               <span className="review-badge">Revisão recomendada</span>
             )}
-            <p>
-              {!analiseConcluida(alerta)
-                ? alerta.mensagemOriginal
-                : alerta.textoCorrigido || alerta.mensagemTratada || alerta.resumo}
-            </p>
-            {analiseConcluida(alerta) && <p>{alerta.resumo}</p>}
+            {estaProcessando(alerta) && (
+              <div className="original-message">
+                <p>{alerta.mensagemOriginal}</p>
+                <span>Mensagem original aguardando tratamento da IA.</span>
+              </div>
+            )}
+            {analiseConcluida(alerta) && (
+              <>
+                <p className="treated-message">{conteudoTratadoAlerta(alerta)}</p>
+                {alerta.resumo && alerta.resumo !== conteudoTratadoAlerta(alerta) && (
+                  <p className="alert-summary">{alerta.resumo}</p>
+                )}
+                {alerta.orientacaoPreventiva && (
+                  <p className="preventive-guidance">
+                    <strong>Orientação preventiva:</strong> {alerta.orientacaoPreventiva}
+                  </p>
+                )}
+              </>
+            )}
             <time dateTime={alerta.criadoEm}>
               {new Intl.DateTimeFormat('pt-BR', {
                 dateStyle: 'short',
@@ -561,43 +628,57 @@ function Alertas({
 }
 
 function SituacaoPorRegiao({ resumoRegiao, filtrosAtivos }) {
+  const regiaoSelecionada = filtrosAtivos.bairro
+    ? `Blumenau · ${filtrosAtivos.bairro}`
+    : 'Blumenau · Todos os bairros'
+
   return (
     <section className="region-panel">
       <div className="summary-title">
-        <h2>Situacao por Regiao</h2>
-        <span>
-          {filtrosAtivos.cidade || filtrosAtivos.bairro
-            ? [filtrosAtivos.cidade, filtrosAtivos.bairro].filter(Boolean).join(' - ')
-            : 'Todas as regioes'}
-        </span>
+        <h2>Situação por região</h2>
+        <span>{regiaoSelecionada}</span>
+      </div>
+
+      <div className="risk-explanation">
+        <h3>Nível de risco</h3>
+        <p>Indica a criticidade da situação e o grau de atenção recomendado para a comunidade.</p>
       </div>
 
       <div className="metrics-grid region-metrics">
-        <article className="metric-card total">
-          <span>Total encontrado</span>
+        <article className="metric-card total region-total">
+          <span>Total</span>
           <strong>{resumoRegiao.totalAlertas ?? 0}</strong>
         </article>
 
-        {niveis.map((nivel) => (
-          <article className="metric-card" key={nivel.value}>
-            <span>Risco {nivel.label}</span>
+        {[...niveis].reverse().map((nivel) => (
+          <article className={`metric-card attention-${nivelClass(nivel.value).replace('level-', '')}`} key={nivel.value}>
+            <span>Risco {nivel.label.toLowerCase()}</span>
             <strong>{resumoRegiao.totalPorNivelAtencao?.[nivel.value] ?? 0}</strong>
           </article>
         ))}
+      </div>
 
-        {categorias.map((categoria) => (
-          <article className="metric-card" key={categoria.value}>
-            <span>{categoria.label}</span>
-            <strong>{resumoRegiao.totalPorCategoria?.[categoria.value] ?? 0}</strong>
-          </article>
-        ))}
+      <div className="region-breakdown">
+        <div className="breakdown-list">
+          <h3>Por categoria</h3>
+          {categorias.map((categoria) => (
+            <div key={categoria.value}>
+              <span>{categoria.label}</span>
+              <strong>{resumoRegiao.totalPorCategoria?.[categoria.value] ?? 0}</strong>
+            </div>
+          ))}
+        </div>
 
-        {['Baixa', 'Média', 'Alta'].map((confianca) => (
-          <article className={`metric-card ${getConfiancaSituacaoClass(confianca)}`} key={confianca}>
-            <span>Confiança {confianca}</span>
-            <strong>{resumoRegiao.totalPorConfiancaSituacao?.[confianca] ?? 0}</strong>
-          </article>
-        ))}
+        <div className="breakdown-list">
+          <h3>Por confiança da informação</h3>
+          <p className="breakdown-help">Indica se existem outros relatos parecidos na mesma região.</p>
+          {['Baixa', 'Média', 'Alta'].map((confianca) => (
+            <div className={getConfiancaSituacaoClass(confianca)} key={confianca}>
+              <span>Confiança da informação: {confianca.toLowerCase()}</span>
+              <strong>{resumoRegiao.totalPorConfiancaSituacao?.[confianca] ?? 0}</strong>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="recent-list">
@@ -608,10 +689,10 @@ function SituacaoPorRegiao({ resumoRegiao, filtrosAtivos }) {
               <strong>{localizacaoTitulo(alerta)}</strong>
               <span>
                 {estaProcessando(alerta)
-                  ? 'Analisando...'
+                  ? 'IA analisando...'
                   : alerta.statusProcessamento === 'Erro'
-                    ? 'Revisao recomendada'
-                  : `${categoriaLabel(alerta.categoria)} - ${niveisAtencao[alerta.nivelAtencao]}`}
+                    ? 'Revisão recomendada'
+                    : `${categoriaLabel(alerta.categoria)} · Nível de risco: ${niveisAtencao[alerta.nivelAtencao]}`}
               </span>
             </article>
           ))
